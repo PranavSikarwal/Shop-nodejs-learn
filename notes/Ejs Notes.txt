@@ -1,0 +1,51 @@
+About EJS usage and how to convert from .html to .EJS
+ejs is writing javascript inside the htmlish pages
+we write the template code inside the brackets as we did inside braces in pug
+e.g. title will now be -<%= docTitle%>
+
+basic structure of a bracket <% ... %>
+we have mainly three types of brackets
+1. brackets which return text hence not rendered as html 
+    <%= docTitle%>
+
+2. brackets which perform logics based upon javascript syntaxing
+    <% ...logic %>
+Note: Writing the closing braces is necessary to implement logic for eg. the code inside main-content of shop.ejs.
+
+3. brackets which can be rendered using ejs engine 
+    <%- ...SourceOfHtmlCodeHere %>
+    we use these type of brackets to include inclusions of html codes which are further rendered and then included in the pages.
+e.g. refer implementing includes/layouts in ejs section.
+
+e.g. We wrote this inside main-content of shop.ejs file
+    <div class="main-content">
+        <% if (prods.length > 0){%> // this is logic 
+        <% for (let product of prods){ %>
+        <div class="card">
+            <img height ="400px" width="300px" src="https://howtodrawforkids.com/wp-content/uploads/2022/07/how-to-draw-an-open-book.jpg" alt="books">
+            <p class="product-name"><%= product.title%></p>
+            <p class="product-cost">$9.99</p>
+            <Button class="addtoCart">Add to Cart</Button>
+        </div>
+        <% }}else{ %>
+            <h2>No Products -> <a href="/admin/add-product">ADD-PRODUCT</a></h2>
+        <% } %> //writing the closing bracekts is necessary
+    </div>
+
+
+Implement includes in ejs
+Ejs do not have layouts as we have in pug, but it has includes feature which allows us to refer a part of our code collectively to a file.
+
+e.g. in our pages we had three such parts head which contained the title and imports, navigation bar which was common in whole webApp and third is our ending tags which were also repeating
+
+hence we made three includes inside a new folder in views named includes
+we made head.ejs, nav.ejs, end.ejs // look these folders to get idea
+
+further in those ejs files we included above inclusions by syntax of includes:
+e.g. <%- include('include/head.ejs') %> //this was included to include head.
+
+Wrote logic for active class in nav.ejs
+we wrote the logic below to add active classes in ejs depending upon the path variable passed
+    -class = <%= path === "...matching path here"? 'active':'' %>
+
+

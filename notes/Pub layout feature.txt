@@ -1,0 +1,32 @@
+PUG layout feature:-
+
+As we made redundancy by re-writing header details from files to files, we can improve this type of code using pug layout feature which allows us to set a basic layout and use it in other files
+
+We can create a basic layout and add different data depending upon the changing content from one page to other.
+
+made a new folder in views named as layouts where all basic layouts will be made.
+made a main-layout.pug in layouts folder where we will write basic layout of page and extend it in every other page.
+
+we used block <name-of-block> feature 
+i.e. in main-layout file we wrote : -block style, -block content
+
+and in other files we extended main-layout by:
+i.e. in shop.pug -extends layouts/main-layout.pug
+                 - block style
+                    ....added required styles here
+                 -block content
+                    ....added content of shop here
+
+i.e. in add-product.pug -extends layouts/main-layout.pug
+                 - block style
+                    ....added required styles here
+                 -block content
+                    ....added content of add-product here
+
+similarly to page-not-found.pug
+
+But if you have noticed we cannot add active property that was present for add product and shop pages at different times.
+
+Dynamically setting a class for different pages in pug:-
+
+

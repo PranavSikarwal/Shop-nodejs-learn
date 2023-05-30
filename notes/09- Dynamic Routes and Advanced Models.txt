@@ -1,0 +1,574 @@
+Modeule Content -:
+1- Passing Route Params
+2- Using Query Params
+3- Enhancing our Model
+
+Pre-requisite:
+replace the following from starting setup zip file, public file and views file, it contains the enhanced front-end.
+
+I- Adding ProductID in the 'path':
+
+Basically we are trying to create a details button for each product by passing the unique id through the hyperlink of the button and then handling that unique id through ROUTE PARAMS.
+
+We made a new button named details inside product-list.ejs and named it details.
+further we made it linkable button which redirects us to the "/products/id" for unique id of product.
+
+>> <a href="/products/<%= product.id %>" class="btn">Details</a>
+
+We further added a new parameter to Model of product i.e. ID of the product.
+
+To do it we made a random string id using Math.random().toString()
+then assigned the id to product while saving the product to the array of products.
+
+>>     save(){
+>>      this.id = Math.random().toString(); //adding random string id 
+>>      ...
+>> }
+ 
+Further in next module we will handle the url linked to product detail using ROUTE PARAMS.
+
+II- Extracting Dynamic PARAMS :-
+
+PARAMS is a object available in express router, basically we can get dynamically a path of the router get request:
+>>router.get('/products/:productId',shopController.getRenderProduct);
+//this is a dynamic route hence should be added after specific routes.
+
+Note: dynamic routes such as above must be added after the specifir routes for e.g.
+>> router.get('/products/delete');
+>> router.get('/products/:productId',shopController.getRenderProduct); //getRenderProduct inside shop controller.
+this allows specific route to handeled before encounter of the :productId route as it handles each and every route with /products/...
+
+Further we made a Controller to extract the PARAM passed using the variable as property of PARAM object
+i.e. param.productId because productId was recieved from "/products/:productId".
+
+>> exports.getRenderProduct = (req,res,next)=>{
+    //PARAMS object of express router gives a passed product id in it, "/products:productId" cathes the id.
+    const prodId = req.params.productId;
+    console.log(prodId);
+    res.redirect("/")
+>> };
+
+Hence we logged the productId and further redirect to index to not stop flow control.
+
+III- Loading Product data
+
+We made a static function findById inside Product class which will find the product by id and further run a callback.
+
+>>    static findById(id, callback){
+        getProductsFromFile(products => {
+            const product = products.find(product => product.id === id);
+            callback(product);
+        });
+>>    }
+
+We handled the findById function insdie the shop controllers function getRenderProduct a callback was passed to the function findById which will run after completion of the code.
+
+>> exports.getRenderProduct = (req,res,next)=>{
+    //PARAMS object of express router gives a passed product id in it, "/products:productId" cathes the id.
+    const prodId = req.params.productId;
+    Product.findById(prodId,product => 
+        {console.log(product)}
+    );
+    res.redirect("/")
+>> };
+
+Hence on clicking the details button the details of the respective products were logged
+
+Next we will manage a view for the details of the product
+
+IV- Rendering the product Details View
+We setup the product-details.ejs view for passed productId.
+
+`
+<%- include('../includes/head.ejs') %>
+    </head>
+
+    <body>
+        <%- include('../includes/navigation.ejs') %>
+        <main class="centered">
+            <h1><%= product.title %></h1>
+            <hr>
+            <div>
+                <img src="<%= product.imgUrl%>" width ="300px" height ="400px" alt="<%= product.title %>">
+            </div>
+            <h2>$<%= product.price%></h2>
+            <p><%= product.description %></p>
+        </main>
+        <%- include('../includes/end.ejs') %>
+`
+
+Now we rendered this product-detail.ejs when reach to /products:productId get request inside shop controller we made changes to function named `getRenderProduct`
+>>exports.getRenderProduct = (req,res,next)=>{
+    //PARAMS object of express router gives a passed product id in it, "/products:productId" cathes the id.
+    const prodId = req.params.productId;
+    Product.findById(prodId,product => 
+        res.render('shop/product-detail',{product: product, docTitle: product.title, path:'/products'})
+    );
+    
+>>};
+
+We passed a single product rather than passing array of products as in other files(prods).
+We passed product title as docTitle, and `/products` as the path.
+
+!!CAUTION
+Note: Without passing the values of the docTitle and path the ejs will give error and page will be unable to load.
+
+Further we will add a button of `add to card` to this product detail page
+specifications of that button are:
+`
+<form action="/cart" method="POST">
+    <button class="btn" type="submit">Add to Cart</button>
+</form>
+`
+
+This button has same styling as btn class and has type submit with a form whose action is to redirect to /cart and send the data to that route with a POST method.
+
+V- Passing data with POST request.
+
+We can past data in body of a post request, hence in the form of add to cart button we can pass the data as we passed the data in add product page.
+
+In add product page we had text fields and for the name of those text fields data was passed.
+Here wo do not have any field name on which the data will be passed hence we add a hidden field.
+
+Note: We can pass data through a hidden field (hidden input type) also.
+
+We do so by adding the following input field in the form.
+`
+<form action="/cart" method="POST">
+    <button class="btn" type="submit">Add to Cart</button>
+    <input type="hidden" name="productId" value="<%=product.Id %>">
+</form>
+`
+!!REMEMBER
+Note: We can set up a hidden type input field to pass certain data in post request.
+
+Other Approach to pass id: We can also use :Param (param object) in url of the action i.e action='/cart:productId' i.e. dynamic url method we learnt in this section.
+
+but as POST method already gives a body to pass hence no need to use dynamic url technique.
+
+Now we will set up route and controller for post request as mentioned above.
+
+Setting up the controller first:
+>>exports.postCart = (req, res, next)=>{
+    const prodId = req.body.productId; //productId is the name of that hidden field
+    console.log(prodId);
+    res.redirect('/cart');
+>>};
+
+We excepted the urlencoded data passed from the form and made accessible after passing through the middleware bodyParser.urlencoded.
+i.e. req.body.productId where productId is the name of the hidden input field through which we passed the data.
+
+Now rememeber we have add to cart button at mutiple places throught the website hence we will create a include for the add to cart button to reduce redundancy and improve productivity.
+
+Note: Use includes where ever using same things multiple times throught the website.
+
+hence we made a add-to-cart.ejs:
+>><form action="/cart" method="POST">
+    <button class="btn" type="submit">Add to Cart</button>
+    <input type="hidden" name="productId" value="<%= product.id %>">
+>></form>
+
+!!!Most Important part
+!!CAUTION
+
+But we will get a error above, because our add-to-cart include does not have product values passed to it hance these values cannot be referenced there.
+
+To solve the above issue, EJS template engine offers us with a way to pass the object after include to the given include hence we can get product to add-to-cart include.
+
+To pass a object with include we can do:
+>><%-include('../includes/add-to-cart', {product: product}) //similar to how data is passed to EJS engines
+
+This was the most important part of this section.
+
+VI- Adding a cart Model
+
+We started with adding making a cart model and inside it we made a Cart class with a static method to be called when we click on Add-to-cart button.
+
+Cart model is as follows:
+>> const p = path.join(rootDir, 'data', 'cart.json');
+ module.exports = class Cart {
+    //fetch previous cart
+    static addProduct(id,productPrice){
+        const product = fs.readFile(p, (err, fileContent)=>{
+            let cart = {products:[], totalPrice: 0};
+            if(!err){// no error means file wasn't empty
+                cart = JSON.parse(fileContent);
+            };
+            //analyze cart => find existing product
+            const existingProductIndex = cart.products.findIndex(product => product.id === id);
+            const existingProduct = cart.products[existingProductIndex];
+            let updatedProduct; //update the quantity of product
+            if(existingProduct){
+                //if exiting then increase the count of that product
+                updatedProduct = {...existingProduct};
+                updatedProduct.qty += 1;
+                cart.products = [...cart.products];//just to show and ensure, works without also
+                cart.products[existingProductIndex] = updatedProduct;
+            }else{
+                //add new product if not existing product
+                updatedProduct = {id : id, qty: 1};
+                cart.products = [...cart.products, updatedProduct];
+            };
+            cart.totalPrice = cart.totalPrice + +productPrice; //productPrice is string hence +productPrice becomes int
+            //write the changes in cart to the file
+            fs.writeFile(p, JSON.stringify(cart), (err)=>{
+                console.log(err);
+            });
+
+        });   
+    };
+>> };
+
+The above code is pretty much self explanatory;
+
+new Learning:
+if price is string then +price changes string to floating number to allow the addition
+
+We can also follow other method i.e. update the quantity of product at existing product index, but it is always a good practice to make a newProduct and then assign the existingProduct.
+
+Note: It is a good practice to make newProduct and then assign it to existingProduct rather than changing the quantity at index of existingProduct.
+
+VII- Using Query Params: !!veryImportant part of this section
+
+Query param is a object same as Param, this allows to pass additional information with the link without hindering the route.
+
+Query param are placed after ? in a link i.e.
+/admin/edit-product?edit=true
+
+PARAMS affect the url path hence routing is affected whereas QUERY PARAM do not affect the router path hence routing is inaffective.
+
+!Note here the route will be /admin/edit-product only but instead a extra edit=true will be passed to the route.
+which we can retrieve by req.query.key i.e. here req.query.edit
+
+Hence with this intro we start this section
+
+First we can infer that out edit-product and add-product can be the same pages but with just different ways
+
+with edit-product we can load pre populated data( or prefilled data), and with admin-product we can load just data.
+
+Our Approach-
+we deleted extra edit-product page and handled both edit-product and add-product on same pages, when looking for edit product we can basically pre-populate the ejs page otherwise it is simple add product page.
+
+we made a new function inside admin controller to handle edit-product path.
+
+why we need a new controller function? 
+Ans: So that we can defferentiate between wheter user is to add product or edit product as view of both of them are the same.
+
+We made the controller function inside admin controller as follow:
+>>exports.getEditProduct = (req, res, next)=>{
+    const editMode = req.query.edit;//query contains string key value pairs hence editMode is not boolean
+    //if want boolean value
+    //const editMode = req.query.edit==='true'?true:false;
+    //hence empty string here denote false
+
+    if (!editMode){
+        res.redirect('/'); //if editMode is not on then probably the user landed here by chance
+    };
+   
+    res.render(
+        'admin/edit-product',
+        {docTitle: 'Edit-Product',
+        path: '/admin/add-product',
+        editing: editMode
+    })
+>>};
+
+Why we checked for edit mode wile landing on the edit-product page?
+ANS: We do not want anyone to land on page without intentions to edit that is just using url and no query param specified, this makes sites less attractive, and unresponsive.
+
+Next we will pre-populate the edit-product page and add button actions.
+
+VIII- Pre-Populating the Edit product page with Data:
+
+Inside this section we did:
+
+1- Added a search for product through id inside getEditProduct, and passed it to templating engine.
+2- EJS features used to select update product or add product button on basis of edit mode value
+3- Pre populated the fields in case of edit mode.
+
+Search for product is as follows:
+>>  const id = req.params.productId;
+    Product.findById(id, (product) => {
+        res.render(
+            'admin/edit-product',
+            {docTitle: 'Edit Product',
+            path: '/admin/add-product',
+            editing: editMode,
+            product: product
+        })   
+>>  });
+
+We prepoulated edit-product.ejs file by using:
+<%if(editing){%> do-something <% }else{ %> do-other<%}%>
+
+We did three thing using above template:
+1- Added edit product text to button instead of add product
+2- Changed the form `action="/admin/<%if(editing){%>edit-product<%}else{%>add-product<%}%>"`
+    so that the request is sent differently when we are adding the product and when we are editing the product which are two completely different things.
+
+3- Made value of fields equal to prepopulated values
+    e.g. value="<%if(editing){%><%=product.title%><%}%>"
+
+
+IX- Linking to the Edit page
+
+In this section we will do third small tasks:
+1- Link Admin Products Edit button to the edit mode of the products
+
+To Open specified product on clicking the edit button of admin products,
+We changed the href attribute of edit button i.e.
+>> <a href="/admin/edit-product/<%= product.id%>?edit=true" class="btn">Edit</a>
+
+Further this will redirect to specified product in edit mode.
+
+2- Made a route for update product button in edit-prodct view
+hence added this route in the admin routes;
+>>router.post('/edit-product', adminController.postEditProduct);
+
+even though dynamic route `router.get('/edit-product/:productId', adminController.getEditProduct)` is above this route but this will still work because it is a post request.
+
+3- We made a empty controller for such route named postEditProduct, which we will write in next section.
+
+X- Editing the Product Data.
+
+Following things were done under this topic:-
+1- We updated save method of product class(model) to update the the product.
+    Our approach:
+    //retrieve the id of the product i.e. when product is existing
+    //pass null if adding the new product hence pass null as idthrough getAddProduct admin controller function
+    //check if id is not null then write code to update the existing product and write on file
+    //else create product and write on file
+
+>>  save(){
+        getProductsFromFile(products=>{
+            if(this.id){
+                const existingProductIndex = products.findIndex(product => product.id === this.id);
+                const updatedProducts = [...products];
+                products[existingProductIndex]= this;
+                //writeFile will always replace the old content
+                fs.writeFile(p,JSON.stringify(updatedProducts),(error)=>{//call it on updatedProduct
+                    console.log(error);//callback to log error
+                });
+            }else{
+                this.id = Math.random().toString(); //adding random string id 
+                products.push(this);
+                fs.writeFile(p,JSON.stringify(products),(error)=>{//object to JSON
+                    console.log(error); //callback to log error
+                });
+            }
+        });
+>>  };
+
+2- We passed the product from edit-product.ejs file through post method 
+    as in edit-product.ejs there is no id field hence we will add a hidden id field as follows:
+    <%if(editing){%><input type="hidden" name="id" value="<%= product.id%>"><%}%>
+
+3- Now we will write the postEditProduct controller which will work as follow:
+    //Make the product from req body
+    //initiate the instance of product on basis of product
+    //use the save() function on that product.
+
+>>  exports.postEditProduct = (req, res, next)=>{  //get is the request this funciton handles
+    //retreiving product from req body
+    id = req.body.id;
+    title = req.body.title;
+    description = req.body.description;
+    price = req.body.price;
+    imgUrl = req.body.imgUrl;
+    const newProduct = new Product(id, title, imgUrl, price, description);
+    newProduct.save();
+    res.redirect('/admin/products');
+>>  };
+
+XI- Adding the Product-Delete functionality.
+
+In this Module we will implement the delete button of admin products.
+
+Implementation of above functionality is as follows:
+1- We made action of form of the button delete.
+    then we added a hidden input of name productId to pass the id of the delted product urlencoded.
+>>  <form action="/admin/delete-product" method="POST">
+        <input type="hidden" name="productId" value="<%= product.id %>">
+        <button class="btn" type="submit">Delete</button>
+>>  </form>
+
+2- We made a Product model static method to delete product.
+Note- a static product can be called without instantion of the class of the object.
+    e.g. Product.fetch() where Product is the class.
+
+the delete static function is as follows:
+>>  static deleteById(id){
+        getProductsFromFile(products=>{
+            const updatedProducts = products.filtre(product => product.id !== id);
+            fs.writeFile(p, updatedProducts.stringify(), (err)=>{
+                //we will delete the product from cart also if no error, 
+                //because we do not want an erraneous cart deletion
+                //here we will inject code in next module
+            });
+        });
+>>  };
+
+we will Delete product from cart also if there is no error in deleting the product from the file:
+which we will do in next module
+
+XII- Deleting Cart Item
+
+Made a function inside the cart model to delte the item inside that cart and reduce its price;
+
+Requirements:
+We will require two thing for this,
+productId and it's price so that we can decrease the total price.
+
+totalPrice = totalPrice - productPrice * (Qty of product in cart)
+
+Implementation:
+>> static deleteProduct(id , price){
+        //load products from cart
+        fs.readFile(p, (err, fileContent)=>{
+            if(err){//when cart empty
+                return
+            };
+            const cart = JSON.parse(fileContent)
+            //get product from id
+            //get its qty
+            //made Updatedproducts using spread
+            const updatedCart = {...cart};
+            const product = updatedCart.products.find(product => product.id === id);
+            if(!product){//product not found in the cart simply exit
+                return
+            };
+            const productQty = product.qty;
+            //updated total price
+            console.log("price:", price, "qty", productQty);
+            console.log("totalPriceB:",cart.totalPrice,"priceRemoved:", productQty*price);
+            const totalPrice = cart.totalPrice - productQty * price;
+
+            //filtre Updatedproducts and fed to updatedCart
+            updatedCart.products = updatedCart.products.filter(product => product.id !== id);
+            
+            //updateprice of cart
+            updatedCart.totalPrice = totalPrice;
+
+            //pushed the cart into the file
+            fs.writeFile(p, JSON.stringify(updatedCart), (err)=>{
+                console.log(err);
+            });
+        });
+>>  };
+
+implementation was first written and then the code was written.
+
+After this we update deleteById function of product model;
+
+>>  static deleteById(id){
+        getProductsFromFile(products=>{
+            const product = products.find(product => product.id === id);
+            const updatedProducts = products.filter(product => product.id !== id);
+            fs.writeFile(p, JSON.stringify(updatedProducts), (err)=>{
+                //we will delete the product from cart also if no error, 
+                //because we do not want an erraneous cart deletion
+                if(!err){
+                    Cart.deleteProduct(id, product.price);
+                };
+            });
+        });
+>>  };
+
+Now it retrieves product as we have to pass product price also.
+
+further we added a route to handle this postDeleteProduct feature:-
+>> exports.postDeleteProduct = (req,res,next)=>{
+    prodId = req.body.productId;
+    Product.deleteById(prodId);
+    res.redirect('/admin/products');
+>> };
+
+XIII- Displaying cart item on the cart page:-
+
+We First added a view for the Cart.
+Then added a controller to render that view and passed path and other variables
+
+Then we made a static method inside cart model to run a callback and provide callback with the cart.
+>>  static getCart(callback){
+        fs.readFile(p, (err, fileContent) => {
+            if(err){//when no content
+                callback(null);//to show that cart is empty which is also required
+            }
+            const cart = JSON.parse(fileContent);
+            callback(cart);
+        });
+>>  }
+
+A controller function named getCart was made inside shopController which will provide with the product of the carts with the quantity of each of the product.
+
+Hence to render a cart we need both its details with quantity of that product in the cart.
+We loaded the details of the product by Matching it with Product.findById to search for each product.
+
+Further if mathces, we stored that product in an object of product-details with qty
+
+>>  exports.getCart = (req, res, next)=> {
+        Cart.getCart(cart => {
+            //get cart
+            Product.fetchAll(products => {
+                //get array of updated products with their quantity
+                const cartProducts = [];
+                for(product of products){
+                    const existingProduct = cart.products.find(prod => prod.id === product.id);
+                    if(existingProduct){
+                        cartProducts.push({prod: product, qty: existingProduct.qty});
+                    };
+                };
+                res.render('shop/cart',{path: '/cart',docTitle: 'Your Cart',prods: cartProducts});
+            });
+        });
+>>  };
+Then handled a route for getCart inside shopRoutes.
+
+>> <%- include('../includes/head.ejs') %>
+    </head>
+
+    <body>
+        <%- include('../includes/navigation.ejs') %>
+        <% if(prods.length > 0){ %>
+            <ul>
+            <%prods.forEach(product => {%>
+                <li><p><%= product.prod.title %>(<%= product.qty%>)- <span><%= product.prod.price %></span></p>
+                <form action="/delete-from-cart" method="POST">
+                    <button class="btn" type="submit">Delete</button>
+                    <input type="hidden" name="productId" value="<%= product.prod.id %>">
+                    <input type="hidden" name="price" value="<%= product.prod.price %>">
+                </form>
+                </li>
+            <% });%>
+            </ul>
+        <%}else {%>
+            <h1>No Products available => Go to <a href="/products">SHOP</a></h1>
+        <% } %>
+>>      <%- include('../includes/end.ejs') %>
+
+Note: we have also added a delete button which will be used in next section.
+
+XIV- Deleting cart items:-
+
+We made a action on the delete button of cart.ejs view
+this action will send a post req to delete-from-cart with id and price data.
+
+>>  <form action="/delete-from-cart" method="POST">
+        <button class="btn" type="submit">Delete</button>
+        <input type="hidden" name="productId" value="<%= product.prod.id %>">
+        <input type="hidden" name="price" value="<%= product.prod.price %>">
+>>  </form>
+
+further we made a route for delete-from-cart and made a function deleteCartItem
+>> router.post('/delete-from-cart',shopController.deleteCartItem);
+
+>>  exports.deleteCartItem = (req, res, next) => {
+        const id = req.body.productId;
+        const price = req.body.price;
+        Cart.deleteProduct(id, price);
+        res.redirect('/cart');
+>>  };
+
+productId and its price were passed through hidden inputs on submit on of delete button.
+
+This is where our local Storage learning and, in further sectoins we will learn how to integrate databases which will help to retrieve product faster.

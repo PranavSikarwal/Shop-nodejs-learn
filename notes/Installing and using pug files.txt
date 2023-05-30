@@ -1,0 +1,56 @@
+First we installed templating engines, pug ejs and handlebar
+- npm install --save pug ejs express-handlebars
+
+used app.set to set view engine which will be used to render
+app.set sets the global configuration values for express to understand.
+sometimes it can be key value pairs which express cannot extract we can extract them globally.
+but we will here set reserved key value for render engine aka view engine which express will understand globally.
+'view engine' - specifies express to use the value engine to render the html pages(created using pug).
+'views' - allows us to tell express where to find above dynamic views or html pages(created using pug).
+
+-app.set('view engine', 'pug'); //this command will only work with pug not every engine because pug auto registers, has good integration with express.
+-app.set('views','views'); //views key will find the templating pages in views folder.
+
+we made shop.pug from shop.html
+
+we used .render(location of file wrt views folder)
+-res.render('shop'); //this assigns pug to render shop.pub in views folder which was folder specified in .set views key
+
+now we will provide products object from admin.js to shop.js which will be passed to shop.pug file and will be rendered there.
+
+-const products = adminData.products; // products will recieve object from admin.js
+-res.render('shop', {prods: products, docTitle: 'shop'});//while render a javascript object will be passed with key value pairs where prods represents products object recieved from adminData.
+
+we will recieve object passed through .render to views by using #{} and specifying the value of property in object passed.
+e.g. for html title in pug we will - #{docTitle} // will transfer shop title to that place
+e.g. for card title in pug we will - #{product.title} //will transfer product title using loop- 
+i.e. "for each product in prods".
+
+further we can use loops and if statements in pug files
+using loop in pug file
+e.g. for each product in prods // this will loop prods object and for each object it will perform the same action
+
+using if statement in pug file;
+e.g. if prods.length > 0 //this will iterate when length of object is greater than 0.
+     else // data under this will be iterated.
+
+hence this is what we wrote...
+.main-content 
+    if prods.length > 0 
+        each product in prods
+            .card
+                img(src="https://howtodrawforkids.com/wp-content/uploads/2022/07/how-to-draw-an-open-book.jpg", alt="Card-Title", srcset="")
+                p.product-name #{product.title}
+                p.product-cost $9.99
+                button.addtoCart Add to Cart
+    else 
+        h2 No Products -> 
+            a(href="/admin/add-product") Add Product
+
+
+
+
+
+
+
+
